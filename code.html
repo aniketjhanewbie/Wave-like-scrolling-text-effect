@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Wave/Sine Curve Text</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: transparent; /* Makes the entire body background transparent */
+            font-family: 'IBM Plex Mono', monospace; /* Default font */
+            overflow: hidden; /* Prevent scrollbars if content slightly exceeds viewport */
+        }
+
+        #wave-text-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 200px; /* Sufficient height for wave amplitude and flat text */
+            /* Optional: Add a visual border for debugging the container */
+            /* border: 1px dashed red; */
+        }
+
+        #wave-text-wrapper {
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+            animation: waveScroll 20s linear infinite; /* Adjust speed as needed */
+            transition: transform 0.5s ease-out; /* Smooth transition for pause effect */
+        }
+
+        /* Pause animation on hover */
+        #wave-text-wrapper:hover {
+            animation-play-state: paused; /* Pauses the scrolling of the wave */
+        }
+
+        #wave-text-wrapper span {
+            position: absolute;
+            font-size: 48px; /* New text size: 48 pixels */
+            font-weight: 700;
+            white-space: nowrap;
+            font-family: 'IBM Plex Mono', monospace;
+
+            /* --- Gradient Text Color --- */
+            color: #284554; /* Fallback color */
+            background: linear-gradient(to right, #284554, #4a758c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+
+            /* --- Subtle Text Shadow --- */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+
+            /* --- Transition for smooth flattening/waving --- */
+            transition: transform 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out,
+                        background 0.3s ease-out, -webkit-text-fill-color 0.3s ease-out, text-shadow 0.3s ease-out;
+        }
+
+        /* Hover effect for individual letters (when container is paused) */
+        #wave-text-wrapper:hover span {
+            background: linear-gradient(to right, #4a758c, #6ebcd9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.7), 0 0 10px rgba(255, 255, 255, 0.5);
+            /* Transform is overridden by JS on hover */
+        }
+
+
+        /* Keyframe animation for the entire text block to scroll */
+        @keyframes waveScroll {
+            from { transform: translateX(0%); }
+            to { transform: translateX(-50%); } /* Will be overridden by JS for precise loop */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="wave-text-container">
+        <p id="original-text" style="display: none;">LANCERCREEK</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const textContainer = document.getElementById('wave-text-container');
+            const originalTextElement = document.getElementById('original-text');
+            const textContent = originalTextElement.textContent;
+
+            const waveTextWrapper = document.createElement('div');
+            waveTextWrapper.id = 'wave-text-wrapper';
+            textContainer.appendChild(waveTextWrapper);
+
+            const letters = textContent.split('');
+
+            // --- Wave Parameters ---
+            // You might need to adjust these parameters slightly with the new font size
+            const amplitude = 35; // Increased slightly for a more visible wave with larger text
+            const wavelength = 180; // Adjusted for length
+            const horizontalSpacing = 38; // Increased horizontal space between letters for readability
+            const baseLinePercentage = 50; // Vertical center of the wave within the wrapper (as a percentage)
+
+            const wavyStates = [];
+            const flatStates = [];
+
+            // 1. Calculate and store initial (wavy) and flat positions
+            letters.forEach((char, index) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                waveTextWrapper.appendChild(span); // Temporarily append to measure width
+
+                // --- WAVY STATE CALCULATIONS ---
+                const xWavy = index * horizontalSpacing;
+                const yWavy = baseLinePercentage + (amplitude * Math.sin(xWavy / wavelength * 2 * Math.PI));
+                const rotationAngleWavy = (amplitude * (2 * Math.PI / wavelength) * Math.cos(xWavy / wavelength * 2 * Math.PI)) * (180 / Math.PI);
+
+                wavyStates.push({
+                    x: xWavy,
+                    y: yWavy,
+                    rotation: rotationAngleWavy,
+                    element: span // Store reference to the span element
+                });
+
+                // --- FLAT STATE CALCULATIONS ---
+                const xFlat = index * (span.offsetWidth + 8); // 8px padding between letters for 48px font
+                const yFlat = baseLinePercentage;
+                const rotationAngleFlat = 0;
+
+                flatStates.push({
+                    x: xFlat,
+                    y: yFlat,
+                    rotation: rotationAngleFlat,
+                    element: span
+                });
+            });
+
+            // Set the wrapper's width after all letters are in DOM to measure their widths
+            const flatTextWidth = flatStates[flatStates.length - 1].x + flatStates[flatStates.length - 1].element.offsetWidth + 20; // Last letter's x + its width + padding
+            waveTextWrapper.style.width = ${flatTextWidth * 2}px;
+            waveTextWrapper.style.minWidth = ${flatTextWidth * 2}px;
+            waveTextWrapper.style.left = '50%';
+            waveTextWrapper.style.transform = 'translateX(-50%)';
+
+            // 2. Apply initial (wavy) positions
+            function applyWavyState() {
+                wavyStates.forEach(state => {
+                    state.element.style.left = ${state.x}px;
+                    state.element.style.top = ${state.y}%;
+                    state.element.style.transform = translate(-50%, -50%) rotate(${state.rotation}deg);
+                });
+                waveTextWrapper.style.animationPlayState = 'running';
+            }
+
+            // 3. Apply flat positions
+            function applyFlatState() {
+                flatStates.forEach(state => {
+                    state.element.style.left = ${state.x}px;
+                    state.element.style.top = ${state.y}%;
+                    state.element.style.transform = translate(-50%, -50%) rotate(${state.rotation}deg);
+                });
+                waveTextWrapper.style.animationPlayState = 'paused';
+            }
+
+            // Initially set the wavy state
+            applyWavyState();
+
+            // 4. Add hover event listeners
+            waveTextWrapper.addEventListener('mouseenter', applyFlatState);
+            waveTextWrapper.addEventListener('mouseleave', applyWavyState);
+
+            // Dynamically adjust keyframe to scroll the exact length of one text string
+            const styleSheet = document.createElement('style');
+            styleSheet.innerHTML = 
+                @keyframes waveScroll {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-${flatTextWidth}px); } /* Scroll exact width of the flat text */
+                }
+            ;
+            document.head.appendChild(styleSheet);
+        });
+    </script>
+
+</body>
+</html>
