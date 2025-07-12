@@ -66,3 +66,6 @@ Font size, wave amplitude, spacing.
 Animation speed (animation: waveScroll 20s linear infinite).
 
 Styling on hover.
+
+Check the preview here: https://lancercreek.com/personal-finance-tips
+
